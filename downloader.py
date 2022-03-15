@@ -51,8 +51,9 @@ class Downloader:
         print(f"    Video: {video_detail['title']}")
         print(f"File Size: {self._get_file_size(video_detail['file_size'], True)} | Waiting downloading!")
 
-    def _finish_all_downloads(self, videos_opt: list[dict[str, Any]]): 
-        print(f"Downloads complete, total: {len(videos_opt)}")
+    def _finish_all_downloads(self, videos_opt: list[dict[str, Any]], total: int, success_and_fails: dict[str, int]): 
+        print(f"Downloads complete, total: {total}")
+        print(f"Success: {success_and_fails['success']} - Fails: {success_and_fails['fails']}")
         for video in videos_opt:
             print(Fore.GREEN + Style.BRIGHT + f"Title: {video['title']}")
             print(Fore.YELLOW + Style.BRIGHT + f"File Size Final: {self._get_file_size(video['file_size'], True)}")
@@ -106,7 +107,7 @@ class Downloader:
                 print(e.args)
 
         self.videos_completed = videos_completed
-        self._finish_all_downloads(videos_completed)
+        self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
 
 if __name__ == "__main__":
     downloader = Downloader("https://www.youtube.com/playlist?list=PLqjhHHte7WL-nPCkkQrKlNcVKxnXlDO1B", True)
