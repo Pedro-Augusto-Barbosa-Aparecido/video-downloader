@@ -28,6 +28,11 @@ class Downloader:
             return len(self.playlist.videos)
         return 1
 
+    def __repr__(self) -> str:
+        if self.is_playlist:
+            return self.playlist.title
+        return self.youtube_video.title
+
     def _get_playlist(self, link: str):
         return Playlist(link)
 
@@ -108,9 +113,3 @@ class Downloader:
 
         self.videos_completed = videos_completed
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
-
-if __name__ == "__main__":
-    downloader = Downloader("https://www.youtube.com/playlist?list=PLqjhHHte7WL-nPCkkQrKlNcVKxnXlDO1B", True)
-    downloader.init("Teste")
-    print(downloader.playlist)
-    downloader.download_playlist()
