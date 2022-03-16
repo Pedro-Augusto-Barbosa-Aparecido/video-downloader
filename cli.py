@@ -31,3 +31,5 @@ downloader.init(folder, path)
 
 if is_playlist:
     downloader.download_playlist()
+else:
+    downloader.download_video()

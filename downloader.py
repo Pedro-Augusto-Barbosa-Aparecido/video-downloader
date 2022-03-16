@@ -73,11 +73,11 @@ class Downloader:
     def init(self, folder: str, path: str = None):
         if self.is_playlist:
             self.playlist = self._get_playlist(self.link)
+            self._get_videos_by_playlist()
         else:
             self.youtube_video = self._get_youtube_video(self.link)
 
         self.set_folder_output(folder, path)
-        self._get_videos_by_playlist()
 
     def set_folder_output(self, folder: str, path: str = None):
         self.folder_output = folder
@@ -112,4 +112,28 @@ class Downloader:
                 print(e.args)
 
         self.videos_completed = videos_completed
+        self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
+
+    def download_video(self, add_on_logs: bool = False, keep_old_log: bool = False):
+        videos_completed = []
+
+        try:
+            video = self.youtube_video.streams.get_highest_resolution()
+            video_detail = { 
+                "title": video.title, 
+                "file_size": video.filesize, 
+                "path": video.get_file_path(), 
+                "path_on_system": f"{self.path_output}\\{self.folder_output}"
+
+            }
+
+            self._print_current_video_downloading(video_detail)
+            video.download(output_path=os.path.join(self.path_output, self.folder_output))
+            videos_completed.append(video_detail)
+
+            self.videos_completed = videos_completed
+            
+        except Exception as e:
+            print(e.args)
+
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
