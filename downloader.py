@@ -1,13 +1,16 @@
-from datetime import datetime
 import os
 import calendar
+import sys
 import time
+import codecs
 
 from typing import Any
+from datetime import datetime
 from pytube import Playlist, YouTube
 from pytube.cli import on_progress
 from colorama import Fore, Style
 from pathlib import Path
+from tqdm import tqdm
 
 class Downloader:
     def __init__(self, link: str, is_playlist: bool = False) -> None:
@@ -45,7 +48,7 @@ class Downloader:
 
     def _get_videos_by_playlist(self):
         for video in self.playlist:
-            self.videos.append(YouTube(video, on_progress_callback=on_progress, on_complete_callback=self._on_complete_donwload))
+            self.videos.append(YouTube(video, on_complete_callback=self._on_complete_donwload))
 
     def _get_file_size(self, size: int = 0, format: bool = False):
         if format:
@@ -73,6 +76,26 @@ class Downloader:
     def _on_complete_donwload(self, file_path):
         file_path = file_path.split("\\")
         print(f"Video '{file_path[len(file_path) - 1]}' has completed.")
+
+    def _percent(self, tem, total):
+        perc = (float(tem) / float(total)) * float(100)
+        return perc
+
+    def _progress_function(self,stream, chunk,file_handle, bytes_remaining):
+        size = stream.filesize
+        p = 0
+        while p <= 100:
+            progress = p
+            print (str(p)+'%')
+            p = self._percent(bytes_remaining, size)
+
+    def _show_progress_bar(self, stream, _chunk, bytes_remaining):
+        current = ((stream.filesize - bytes_remaining) / stream.filesize)
+        percent = ('{0:.1f}').format(current * 100)
+        progress = int(50 * current)
+        status = '█' * progress + '-' * (50 - progress)
+        sys.stdout.write(' ↳ |{bar}| {percent}%\r'.format(bar=status, percent=percent))
+        sys.stdout.flush()
             
     def init(self, folder: str, path: str = None):
         if self.is_playlist:
@@ -120,7 +143,9 @@ class Downloader:
         self.videos_completed = videos_completed
 
         if generate_logs: 
-            self.generator_log.generate_log(videos_completed)
+            print(f"Exporting log in {os.path.realpath(self.generator_log.file)}")
+            timestamp = True if not keep_old_log else False
+            self.generator_log.generate_log(videos_completed, keep_old_log=keep_old_log, timestamp=timestamp)
 
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
 
@@ -128,6 +153,7 @@ class Downloader:
         videos_completed = []
 
         try:
+            self.youtube_video.register_on_progress_callback(self._show_progress_bar)
             video = self.youtube_video.streams.get_highest_resolution()
             video_detail = { 
                 "title": video.title, 
@@ -147,10 +173,11 @@ class Downloader:
             print(e.args)
 
         if generate_logs:
-            self.generator_log.generate_log(videos_completed)
+            print(f"Exporting log in {os.path.realpath(self.generator_log.file)}")
+            timestamp = True if not keep_old_log else False
+            self.generator_log.generate_log(videos_completed, keep_old_log=keep_old_log, timestamp=timestamp)
 
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
-
 
 class DownloaderLogger:
     TYPES_OUTPUT_LOG = ("txt", "csv")
@@ -213,21 +240,26 @@ class DownloaderLogger:
             raise ValueError("Invalid content to export log.")
 
         if keep_old_log and not timestamp:
-            with open(self.file_path, "a+") as logger_file:
+            with codecs.open(self.file_path, "a+", "utf-8") as logger_file:
                 self._write_date(logger_file)
-                for item in video_dict_to_log:
+                for item in tqdm(video_dict_to_log):
                     logger_file.write(f"Title: {item['title']}\n")
                     logger_file.write(f"File Size: {item['file_size']}\n")
                     logger_file.write(f"File Location: {item['path_on_system']}\n")
                     logger_file.writelines("---------------------------------------\n\n")
+
+                    time.sleep(1 / len(video_dict_to_log))
         else:
-            with open(self.file_path, "w+") as logger_file:
+            with codecs.open(self.file_path, "w+", "utf-8") as logger_file:
                 self._write_date(logger_file)
-                for item in video_dict_to_log:
+                for item in tqdm(video_dict_to_log):
                     logger_file.write(f"Title: {item['title']}\n")
                     logger_file.write(f"File Size: {item['file_size']}\n")
                     logger_file.write(f"File Location: {item['path_on_system']}\n")
                     logger_file.writelines("---------------------------------------\n\n")
+
+                    time.sleep(1 / len(video_dict_to_log))
+                
 
 
 if __name__ == "__main__":
@@ -237,5 +269,5 @@ if __name__ == "__main__":
         { "title": "Teste 3", "file_size": "400Mb", "path_on_system": "Documents/" },
         { "title": "Teste 4", "file_size": "400Mb", "path_on_system": "Documents/" },
     ]
-    logger = DownloaderLogger(use_timestamp=False)
-    logger.generate_log(d, timestamp=False)
+    logger = DownloaderLogger(use_timestamp=True)
+    logger.generate_log(d, timestamp=True)
