@@ -1,10 +1,12 @@
 import os
+import calendar
+import time
 
 from typing import Any
 from pytube import Playlist, YouTube
 from pytube.cli import on_progress
 from colorama import Fore, Style
-
+from pathlib import Path
 
 class Downloader:
     def __init__(self, link: str, is_playlist: bool = False) -> None:
@@ -70,6 +72,13 @@ class Downloader:
         file_path = file_path.split("\\")
         print(f"Video '{file_path[len(file_path) - 1]}' has completed.")
 
+    @staticmethod
+    def _generate_log(videos_completed: list[dict], videos: list[YouTube]):
+        try:
+            ...
+        except FileNotFoundError as fn:
+            print(fn.args)
+            
     def init(self, folder: str, path: str = None):
         if self.is_playlist:
             self.playlist = self._get_playlist(self.link)
@@ -90,10 +99,12 @@ class Downloader:
     def video_length(self, video: YouTube):
         return video.length
 
-    def download_playlist(self, add_on_logs: bool = False, keep_old_log: bool = False):
+    def download_playlist(self, generate_logs: bool = False, keep_old_log: bool = False):
         videos_completed = []
+        videos_log = []
 
         for video in self.videos:
+            videos_log.append(video)
             try:
                 stream = video.streams.get_highest_resolution()
                 stream_detail = { 
@@ -112,9 +123,10 @@ class Downloader:
                 print(e.args)
 
         self.videos_completed = videos_completed
+        # self._generate_log(videos_completed, videos_log)
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
 
-    def download_video(self, add_on_logs: bool = False, keep_old_log: bool = False):
+    def download_video(self, generate_logs: bool = False, keep_old_log: bool = False):
         videos_completed = []
 
         try:
@@ -137,3 +149,44 @@ class Downloader:
             print(e.args)
 
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
+
+
+class DownloaderLogger:
+    TYPES_OUTPUT_LOG = ("txt", "csv")
+    REGEX_FILE_EXTENSION = "\.txt$|\.csv$"
+
+    def __init__(self, filename: str = "log", use_timestamp: bool = False) -> None:
+        self.filename = filename
+        self.use_timestamp = use_timestamp
+
+        self.dir_output_log = os.path.join(os.path.curdir, "log")
+        self.type_output_log = "txt"
+
+        self.file = self.get_file_path(self.dir_output_log, self.filename, self.type_output_log)
+        self._create_the_log_file()
+
+    def _get_current_timestamp(self):
+        return calendar.timegm(time.gmtime())
+
+    def _create_the_log_file(self):
+        if self.use_timestamp:
+            if not os.path.isdir(f"{os.path.curdir}\\log"):
+                os.mkdir(f"{os.path.curdir}\\log")
+            _filename = self.file.replace(f".{self.type_output_log}", '')
+            file_time = Path(f"{_filename}_{self._get_current_timestamp()}.{self.type_output_log}")
+            file_time.touch(exist_ok=True)
+        else:
+            try:
+                with open(f"{self.file}", 'r+') as file:
+                    pass
+            except FileNotFoundError:
+                if not os.path.isdir(f"{os.path.curdir}\\log"):
+                    os.mkdir(f"{os.path.curdir}\\log")
+                file = Path(self.file)
+                file.touch(exist_ok=True)
+
+    def get_file_path(self, output_path: str, filename: str, type_file: str):
+        return os.path.join(output_path, f"{filename}.{type_file}")
+
+if __name__ == "__main__":
+    logger = DownloaderLogger(use_timestamp=True)
