@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import calendar
 import time
@@ -19,6 +20,7 @@ class Downloader:
         self.path_output = None
 
         self.videos_completed: dict = []
+        self.generator_log = DownloaderLogger(use_timestamp=True)
 
     def __str__(self):
         if self.is_playlist:
@@ -71,13 +73,6 @@ class Downloader:
     def _on_complete_donwload(self, file_path):
         file_path = file_path.split("\\")
         print(f"Video '{file_path[len(file_path) - 1]}' has completed.")
-
-    @staticmethod
-    def _generate_log(videos_completed: list[dict], videos: list[YouTube]):
-        try:
-            ...
-        except FileNotFoundError as fn:
-            print(fn.args)
             
     def init(self, folder: str, path: str = None):
         if self.is_playlist:
@@ -99,7 +94,7 @@ class Downloader:
     def video_length(self, video: YouTube):
         return video.length
 
-    def download_playlist(self, generate_logs: bool = False, keep_old_log: bool = False):
+    def download_playlist(self, generate_logs: bool = True, keep_old_log: bool = True):
         videos_completed = []
         videos_log = []
 
@@ -123,10 +118,13 @@ class Downloader:
                 print(e.args)
 
         self.videos_completed = videos_completed
-        # self._generate_log(videos_completed, videos_log)
+
+        if generate_logs: 
+            self.generator_log.generate_log(videos_completed)
+
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
 
-    def download_video(self, generate_logs: bool = False, keep_old_log: bool = False):
+    def download_video(self, generate_logs: bool = True, keep_old_log: bool = True):
         videos_completed = []
 
         try:
@@ -148,6 +146,9 @@ class Downloader:
         except Exception as e:
             print(e.args)
 
+        if generate_logs:
+            self.generator_log.generate_log(videos_completed)
+
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
 
 
@@ -163,6 +164,7 @@ class DownloaderLogger:
         self.type_output_log = "txt"
 
         self.file = self.get_file_path(self.dir_output_log, self.filename, self.type_output_log)
+        self.file_path = ""
         self._create_the_log_file()
 
     def _get_current_timestamp(self):
@@ -175,6 +177,9 @@ class DownloaderLogger:
             _filename = self.file.replace(f".{self.type_output_log}", '')
             file_time = Path(f"{_filename}_{self._get_current_timestamp()}.{self.type_output_log}")
             file_time.touch(exist_ok=True)
+            
+            self.file_path = f"{_filename}_{self._get_current_timestamp()}.{self.type_output_log}"
+
         else:
             try:
                 with open(f"{self.file}", 'r+') as file:
@@ -185,8 +190,52 @@ class DownloaderLogger:
                 file = Path(self.file)
                 file.touch(exist_ok=True)
 
+            self.file_path = self.file
+
+    def _get_keys(self, dict: dict):
+        return list(dict.keys())
+
+    def _write_date(self, logger_file):
+        logger_file.write("======================================\n")
+        logger_file.write(f"======{datetime.now()}======\n")
+        logger_file.write("======================================\n\n")
+
     def get_file_path(self, output_path: str, filename: str, type_file: str):
         return os.path.join(output_path, f"{filename}.{type_file}")
 
+    def generate_log(self, video_dict_to_log: list[dict[str, Any]] = None, timestamp: bool = True, keep_old_log: bool = True):
+        if video_dict_to_log is None:
+            try:
+                os.remove(self.file_path)
+            except Exception as e:
+                print(e.args)
+
+            raise ValueError("Invalid content to export log.")
+
+        if keep_old_log and not timestamp:
+            with open(self.file_path, "a+") as logger_file:
+                self._write_date(logger_file)
+                for item in video_dict_to_log:
+                    logger_file.write(f"Title: {item['title']}\n")
+                    logger_file.write(f"File Size: {item['file_size']}\n")
+                    logger_file.write(f"File Location: {item['path_on_system']}\n")
+                    logger_file.writelines("---------------------------------------\n\n")
+        else:
+            with open(self.file_path, "w+") as logger_file:
+                self._write_date(logger_file)
+                for item in video_dict_to_log:
+                    logger_file.write(f"Title: {item['title']}\n")
+                    logger_file.write(f"File Size: {item['file_size']}\n")
+                    logger_file.write(f"File Location: {item['path_on_system']}\n")
+                    logger_file.writelines("---------------------------------------\n\n")
+
+
 if __name__ == "__main__":
-    logger = DownloaderLogger(use_timestamp=True)
+    d = [
+        { "title": "Teste 1", "file_size": "400Mb", "path_on_system": "Documents/" },
+        { "title": "Teste 2", "file_size": "400Mb", "path_on_system": "Documents/" },
+        { "title": "Teste 3", "file_size": "400Mb", "path_on_system": "Documents/" },
+        { "title": "Teste 4", "file_size": "400Mb", "path_on_system": "Documents/" },
+    ]
+    logger = DownloaderLogger(use_timestamp=False)
+    logger.generate_log(d, timestamp=False)
