@@ -122,6 +122,7 @@ class Downloader:
         videos_log = []
 
         for video in self.videos:
+            video.register_on_progress_callback(self._show_progress_bar)
             videos_log.append(video)
             try:
                 stream = video.streams.get_highest_resolution()
