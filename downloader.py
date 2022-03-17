@@ -3,6 +3,7 @@ import calendar
 import sys
 import time
 import codecs
+import pyttsx3
 
 from typing import Any
 from datetime import datetime
@@ -24,6 +25,8 @@ class Downloader:
 
         self.videos_completed: dict = []
         self.generator_log = DownloaderLogger(use_timestamp=True)
+
+        self.voice_speaker = pyttsx3.init()
 
     def __str__(self):
         if self.is_playlist:
@@ -72,22 +75,29 @@ class Downloader:
             print(Fore.BLUE + Style.BRIGHT + f"Path | File Location: {video['path_on_system']}\\{video['title']}{'mp4' if video['title'][len(video['title']) - 1] == '.' else '.mp4' }")
             print(Fore.BLACK + " -------------------------- " + Style.RESET_ALL)
 
+        message = ""
+
+        if (success_and_fails["fails"] > 0) and self.is_playlist:
+            message = "Playlist baixada, porém houve videos que não deram certo. Verifique seus links e sua conexão com a rede. "
+        elif (success_and_fails["success"] == len(videos_opt)) and self.is_playlist:
+            message = "Playlist baixada com sucesso. Verifique o diretório que você escolheu para salvar os videos."
+        elif not (self.is_playlist) and (success_and_fails["fails"] > 0):
+            message = "Ocorreu algum erro durante o download, por favor verifique o link e sua conexão com a rede."
+        elif not (self.is_playlist) and (success_and_fails["success"] == len(videos_opt)):
+            message = "Video baixado com sucesso, verifique o diretório escolhido para o mesmo."
+        else:
+            message = "Inconsistência na execução do programa reinicie ele ou reinicie o computador."
+
+        self._alert_on_complete(message)
+
     @staticmethod
     def _on_complete_donwload(self, file_path):
         file_path = file_path.split("\\")
         print(f"Video '{file_path[len(file_path) - 1]}' has completed.")
 
-    def _percent(self, tem, total):
-        perc = (float(tem) / float(total)) * float(100)
-        return perc
-
-    def _progress_function(self,stream, chunk,file_handle, bytes_remaining):
-        size = stream.filesize
-        p = 0
-        while p <= 100:
-            progress = p
-            print (str(p)+'%')
-            p = self._percent(bytes_remaining, size)
+    def _alert_on_complete(self, msg: str) -> None:
+        self.voice_speaker.say(msg)
+        self.voice_speaker.runAndWait()
 
     def _show_progress_bar(self, stream, _chunk, bytes_remaining):
         current = ((stream.filesize - bytes_remaining) / stream.filesize)
