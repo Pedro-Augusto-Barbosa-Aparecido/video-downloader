@@ -13,8 +13,10 @@ from colorama import Fore, Style
 from pathlib import Path
 from tqdm import tqdm
 
+from utils.quality_translator import Quality
+
 class Downloader:
-    def __init__(self, link: str, is_playlist: bool = False) -> None:
+    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high") -> None:
         self.link = link
         self.is_playlist = is_playlist
         self.videos: list[YouTube] = []
@@ -27,6 +29,7 @@ class Downloader:
         self.generator_log = DownloaderLogger(use_timestamp=True)
 
         self.voice_speaker = pyttsx3.init()
+        self.quality = Quality(quality)
 
     def __str__(self):
         if self.is_playlist:
@@ -55,7 +58,7 @@ class Downloader:
 
     def _get_file_size(self, size: int = 0, format: bool = False):
         if format:
-            return f"{(size / 1_000_000.0):.2f} MB/s"
+            return f"{(size / 1024.0 / 1024.0):.2f} MB/s"
         return f"{size} Bytes"
 
     def _print_current_video_downloading(self, video_detail: dict[str, Any] = None):
@@ -64,7 +67,7 @@ class Downloader:
 
         print("Downloading...", end="")
         print(f"    Video: {video_detail['title']}")
-        print(f"File Size: {self._get_file_size(video_detail['file_size'], True)} | Waiting downloading!")
+        print(f"File Size: {self._get_file_size(video_detail['file_size'], True)} | Resolution: {video_detail['resolution']} | Waiting downloading!")
 
     def _finish_all_downloads(self, videos_opt: list[dict[str, Any]], total: int, success_and_fails: dict[str, int]): 
         print(f"Downloads complete, total: {total}")
@@ -135,11 +138,12 @@ class Downloader:
             video.register_on_progress_callback(self._show_progress_bar)
             videos_log.append(video)
             try:
-                stream = video.streams.get_highest_resolution()
+                stream = video.streams.get_by_resolution(self.quality.resolution)
                 stream_detail = { 
                     "title": stream.title, 
                     "file_size": stream.filesize, 
                     "path": stream.get_file_path(), 
+                    "resolution": video.resolution,
                     "path_on_system": f"{self.path_output}\\{self.folder_output}"
 
                 }
@@ -165,11 +169,15 @@ class Downloader:
 
         try:
             self.youtube_video.register_on_progress_callback(self._show_progress_bar)
-            video = self.youtube_video.streams.get_highest_resolution()
+            video = self.youtube_video.streams.get_by_resolution(self.quality.resolution)
+            if video is None:
+                video = self.youtube_video.streams.get_lowest_resolution() if self.quality.quality in ["low", "lowest", "low_medium"] else self.youtube_video.streams.get_highest_resolution()
+
             video_detail = { 
                 "title": video.title, 
                 "file_size": video.filesize, 
                 "path": video.get_file_path(), 
+                "resolution": video.resolution,
                 "path_on_system": f"{self.path_output}\\{self.folder_output}"
 
             }
@@ -256,6 +264,7 @@ class DownloaderLogger:
                 for item in tqdm(video_dict_to_log):
                     logger_file.write(f"Title: {item['title']}\n")
                     logger_file.write(f"File Size: {item['file_size']}\n")
+                    logger_file.write(f"Resolution: {item['resolution']}\n")
                     logger_file.write(f"File Location: {item['path_on_system']}\n")
                     logger_file.writelines("---------------------------------------\n\n")
 
@@ -266,6 +275,7 @@ class DownloaderLogger:
                 for item in tqdm(video_dict_to_log):
                     logger_file.write(f"Title: {item['title']}\n")
                     logger_file.write(f"File Size: {item['file_size']}\n")
+                    logger_file.write(f"Resolution: {item['resolution']}\n")
                     logger_file.write(f"File Location: {item['path_on_system']}\n")
                     logger_file.writelines("---------------------------------------\n\n")
 
@@ -274,11 +284,15 @@ class DownloaderLogger:
 
 
 if __name__ == "__main__":
-    d = [
-        { "title": "Teste 1", "file_size": "400Mb", "path_on_system": "Documents/" },
-        { "title": "Teste 2", "file_size": "400Mb", "path_on_system": "Documents/" },
-        { "title": "Teste 3", "file_size": "400Mb", "path_on_system": "Documents/" },
-        { "title": "Teste 4", "file_size": "400Mb", "path_on_system": "Documents/" },
-    ]
-    logger = DownloaderLogger(use_timestamp=True)
-    logger.generate_log(d, timestamp=True)
+    # d = [
+    #     { "title": "Teste 1", "file_size": "400Mb", "path_on_system": "Documents/" },
+    #     { "title": "Teste 2", "file_size": "400Mb", "path_on_system": "Documents/" },
+    #     { "title": "Teste 3", "file_size": "400Mb", "path_on_system": "Documents/" },
+    #     { "title": "Teste 4", "file_size": "400Mb", "path_on_system": "Documents/" },
+    # ]
+    # logger = DownloaderLogger(use_timestamp=True)
+    # logger.generate_log(d, timestamp=True)
+
+    downloader = Downloader(link="https://www.youtube.com/watch?v=DiXbJL3iWVs", is_playlist=False, quality="hightest")
+    downloader.init("VideoYoutube", os.path.join(os.path.expanduser("~"), "Documents"))
+    downloader.download_video()
