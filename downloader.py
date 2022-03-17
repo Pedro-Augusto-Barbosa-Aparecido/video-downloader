@@ -139,6 +139,10 @@ class Downloader:
             videos_log.append(video)
             try:
                 stream = video.streams.get_by_resolution(self.quality.resolution)
+                if stream is None:
+                    stream = self.youtube_video.streams.get_lowest_resolution() if self.quality.quality in ["low", "lowest", "low_medium"] else self.youtube_video.streams.get_highest_resolution()
+
+
                 stream_detail = { 
                     "title": stream.title, 
                     "file_size": stream.filesize, 
