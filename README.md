@@ -17,7 +17,11 @@
 
 ## Features
 
- - [ ] Download video on high quality
+ - [ ] Download video on high quality]
+   - [ ] Quality 144p
+   - [ ] Quality 240p
+   - [ ] Quality 360p
+   - [ ] Quality 480p
    - [x] Quality 720p
    - [ ] Quality 1080p
  - [ ] Download Mídia Type
