@@ -17,13 +17,13 @@
 
 ## Features
 
- - [ ] Download video on high quality]
-   - [ ] Quality 144p
-   - [ ] Quality 240p
-   - [ ] Quality 360p
-   - [ ] Quality 480p
-   - [x] Quality 720p
-   - [ ] Quality 1080p
+ - [x] Download video on high quality ( if not has resolution passed, app gets closer to past resolution )
+   - [x] Quality 144p lowest
+   - [x] Quality 240p low
+   - [x] Quality 360p low_medium
+   - [x] Quality 480p mediun
+   - [x] Quality 720p high
+   - [x] Quality 1080p hightest
  - [ ] Download Mídia Type
    - [x] Video
    - [x] Playlist

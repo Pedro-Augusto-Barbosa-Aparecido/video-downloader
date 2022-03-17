@@ -1,4 +1,5 @@
 import os
+from pydoc import resolve
 
 from downloader import Downloader
 
@@ -26,7 +27,10 @@ folder = input("Enter the folder to save video(s) ( default is 'VideosYoutube' )
 if folder == "":
     folder = "VideoYoutube"
 
-downloader = Downloader(link, is_playlist)
+print("Choose resolution: lowest=144p | low=240p | low_medium=360p | medium=480p | high=720p | hightest=1080p")
+resolution = input("Your choice: ")
+
+downloader = Downloader(link, is_playlist, resolution)
 downloader.init(folder, path)
 
 if is_playlist:
