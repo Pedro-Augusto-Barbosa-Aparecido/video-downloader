@@ -26,11 +26,11 @@
    - [x] Quality 480p mediun
    - [x] Quality 720p high
    - [x] Quality 1080p hightest
- - [ ] Download Mídia Type
+ - [x] Download Mídia Type
    - [x] Video
    - [x] Playlist
-   - [ ] Only Video Áudio
-   - [ ] Only Playlist Videos Áudio
+   - [x] Only Video Áudio
+   - [x] Only Playlist Videos Áudio
  - [x] Save video anywhere
    - [x] Default folder path ( ***User/Documents*** )
    - [x] Default folder name ( ***VideoYoutube*** )
