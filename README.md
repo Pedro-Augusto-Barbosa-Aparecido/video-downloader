@@ -46,3 +46,10 @@
          - [ ] End without timestamp
    - Folder log export ```$project_folder/log```
  - [ ] GUI
+
+## Bugs to FIX
+
+ - [ ] `NoneType has no attribute streams`
+    <div align="center">
+      <img src="./img/bug_tainara.png">
+    </div>
