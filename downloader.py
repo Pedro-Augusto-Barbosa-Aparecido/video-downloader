@@ -250,6 +250,11 @@ class DownloaderLogger:
         logger_file.write(f"======{datetime.now()}======\n")
         logger_file.write("======================================\n\n")
 
+    def _get_file_size(self, size: int = 0, format: bool = False):
+        if format:
+            return f"{(size / 1024.0 / 1024.0):.2f} MB/s"
+        return f"{size} Bytes"
+
     def get_file_path(self, output_path: str, filename: str, type_file: str):
         return os.path.join(output_path, f"{filename}.{type_file}")
 
@@ -267,7 +272,7 @@ class DownloaderLogger:
                 self._write_date(logger_file)
                 for item in tqdm(video_dict_to_log):
                     logger_file.write(f"Title: {item['title']}\n")
-                    logger_file.write(f"File Size: {item['file_size']}\n")
+                    logger_file.write(f"File Size: {self._get_file_size(item['file_size'], True)}\n")
                     logger_file.write(f"Resolution: {item['resolution']}\n")
                     logger_file.write(f"File Location: {item['path_on_system']}\n")
                     logger_file.writelines("---------------------------------------\n\n")
