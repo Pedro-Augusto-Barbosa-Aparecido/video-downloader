@@ -67,7 +67,7 @@ class Downloader:
 
         print("Downloading...", end="")
         print(f"    Video: {video_detail['title']}")
-        print(f"File Size: {self._get_file_size(video_detail['file_size'], True)} | Resolution: {video_detail['resolution']} | Waiting downloading!")
+        print(f"File Size: {self._get_file_size(video_detail['file_size'], True)} |{video_detail['resolution']}Waiting downloading!")
 
     def _finish_all_downloads(self, videos_opt: list[dict[str, Any]], total: int, success_and_fails: dict[str, int]): 
         print(f"Downloads complete, total: {total}")
@@ -130,7 +130,7 @@ class Downloader:
     def video_length(self, video: YouTube):
         return video.length
 
-    def download_playlist(self, generate_logs: bool = True, keep_old_log: bool = True):
+    def download_playlist(self, only_audio: bool, generate_logs: bool = True, keep_old_log: bool = True):
         videos_completed = []
         videos_log = []
 
@@ -140,14 +140,16 @@ class Downloader:
             try:
                 stream = video.streams.get_by_resolution(self.quality.resolution)
                 if stream is None:
-                    stream = self.youtube_video.streams.get_lowest_resolution() if self.quality.quality in ["low", "lowest", "low_medium"] else self.youtube_video.streams.get_highest_resolution()
+                    stream = video.streams.get_lowest_resolution() if self.quality.quality in ["low", "lowest", "low_medium"] else self.youtube_video.streams.get_highest_resolution()                    
 
+                if only_audio:
+                    stream = video.streams.get_audio_only()
 
                 stream_detail = { 
                     "title": stream.title, 
                     "file_size": stream.filesize, 
                     "path": stream.get_file_path(), 
-                    "resolution": video.resolution,
+                    "resolution": f" Resolution: {video.resolution} | " if not only_audio else " ",
                     "path_on_system": f"{self.path_output}\\{self.folder_output}"
 
                 }
@@ -168,7 +170,7 @@ class Downloader:
 
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
 
-    def download_video(self, generate_logs: bool = True, keep_old_log: bool = True):
+    def download_video(self, only_audio: bool, generate_logs: bool = True, keep_old_log: bool = True):
         videos_completed = []
 
         try:
@@ -176,6 +178,9 @@ class Downloader:
             video = self.youtube_video.streams.get_by_resolution(self.quality.resolution)
             if video is None:
                 video = self.youtube_video.streams.get_lowest_resolution() if self.quality.quality in ["low", "lowest", "low_medium"] else self.youtube_video.streams.get_highest_resolution()
+
+            if only_audio:
+                video = self.youtube_video.streams.get_audio_only()
 
             video_detail = { 
                 "title": video.title, 
@@ -201,6 +206,31 @@ class Downloader:
             self.generator_log.generate_log(videos_completed, keep_old_log=keep_old_log, timestamp=timestamp)
 
         self._finish_all_downloads(videos_completed, self.__len__(), { "success": len(videos_completed), "fails": self.__len__() - len(videos_completed) })
+
+
+class DownloaderAudio(Downloader):
+    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high", folder: str = "AudioYoutube", path: str = None) -> None:
+        super(DownloaderAudio, self).__init__(link, is_playlist, quality)
+        self.init(folder=folder, path=path)
+
+    def download(self):
+        if self.is_playlist:
+            self.download_playlist(True)
+        else:
+            self.download_video(True)
+
+
+class DownloaderVideo(Downloader):
+    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high", folder: str = "VideoYoutube", path: str = None) -> None:
+        super(DownloaderVideo, self).__init__(link, is_playlist, quality)
+        self.init(folder, path)
+
+    def download(self):
+        if self.is_playlist:
+            self.download_playlist(False)
+        else:
+            self.download_video(False)
+
 
 class DownloaderLogger:
     TYPES_OUTPUT_LOG = ("txt", "csv")
@@ -289,7 +319,6 @@ class DownloaderLogger:
                     logger_file.writelines("---------------------------------------\n\n")
 
                     time.sleep(1 / len(video_dict_to_log))
-                
 
 
 if __name__ == "__main__":

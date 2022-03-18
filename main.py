@@ -1,7 +1,8 @@
 import os
-from pydoc import resolve
 
-from downloader import Downloader
+from downloader import DownloaderAudio, DownloaderVideo
+
+downloader = None
 
 is_playlist = input("Do you want download a playlist? ( y/N ) ").lower()
 
@@ -30,10 +31,14 @@ if folder == "":
 print("Choose resolution: lowest=144p | low=240p | low_medium=360p | medium=480p | high=720p | hightest=1080p")
 resolution = input("Your choice: ")
 
-downloader = Downloader(link, is_playlist, resolution)
-downloader.init(folder, path)
+only_audio = input("Only Audio ( y/N ): ").lower()
 
-if is_playlist:
-    downloader.download_playlist()
+if only_audio == 'y':
+    downloader = DownloaderAudio(link, is_playlist, resolution, folder, path)
+elif only_audio == 'n':
+    downloader = DownloaderVideo(link, is_playlist, resolution, folder, path)
 else:
-    downloader.download_video()
+    print(f"Format not valid. Your awnser was: {only_audio}")
+    exit(0)
+
+downloader.download()
