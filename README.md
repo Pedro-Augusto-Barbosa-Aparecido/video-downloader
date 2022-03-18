@@ -12,6 +12,8 @@
    - `pip install venv`
    - `python -m venv $venv-name`
    - `pip install -r requirements.txt`
+ - Connecting to venv:
+   - `$path_venv/Scripts/Activate.ps1`
  - Running project:
    - `python ./main.py`
 
