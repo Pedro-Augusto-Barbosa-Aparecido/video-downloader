@@ -33,10 +33,13 @@ resolution = input("Your choice: ")
 
 only_audio = input("Only Audio ( y/N ): ").lower()
 
+print("Choose File type to export log: [ txt | csv ] ( Default is 'txt' )")
+log_type = input("Your choice: ")
+
 if only_audio == 'y':
-    downloader = DownloaderAudio(link, is_playlist, resolution, folder, path)
+    downloader = DownloaderAudio(link, is_playlist, resolution, folder, path, file_tupe_log=log_type)
 elif only_audio == 'n':
-    downloader = DownloaderVideo(link, is_playlist, resolution, folder, path)
+    downloader = DownloaderVideo(link, is_playlist, resolution, folder, path, file_tupe_log=log_type)
 else:
     print(f"Format not valid. Your awnser was: {only_audio}")
     exit(0)
