@@ -5,6 +5,8 @@ import time
 import codecs
 import pyttsx3
 
+import pandas as pd
+
 from typing import Any
 from datetime import datetime
 from pytube import Playlist, YouTube
@@ -17,7 +19,7 @@ from utils.converter import ConverterMP3
 from utils.quality_translator import Quality
 
 class Downloader:
-    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high") -> None:
+    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high", file_type_log: str = "txt") -> None:
         self.link = link
         self.is_playlist = is_playlist
         self.videos: list[YouTube] = []
@@ -27,7 +29,7 @@ class Downloader:
         self.path_output = None
 
         self.videos_completed: dict = []
-        self.generator_log = DownloaderLogger(use_timestamp=True)
+        self.generator_log = DownloaderLogger(use_timestamp=True, type_file=file_type_log)
 
         self.voice_speaker = pyttsx3.init()
         self.quality = Quality(quality)
@@ -210,8 +212,10 @@ class Downloader:
 
 
 class DownloaderAudio(Downloader):
-    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high", folder: str = "AudioYoutube", path: str = None) -> None:
-        super(DownloaderAudio, self).__init__(link, is_playlist, quality)
+    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high", folder: str = "AudioYoutube", path: str = None, file_tupe_log: str = "txt") -> None:
+        if not file_tupe_log.lower() in ["txt", "csv"]:
+            file_tupe_log = "txt"
+        super(DownloaderAudio, self).__init__(link, is_playlist, quality, file_type_log=file_tupe_log)
         self.init(folder=folder, path=path)
         self.converter = None
 
@@ -230,8 +234,10 @@ class DownloaderAudio(Downloader):
 
 
 class DownloaderVideo(Downloader):
-    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high", folder: str = "VideoYoutube", path: str = None) -> None:
-        super(DownloaderVideo, self).__init__(link, is_playlist, quality)
+    def __init__(self, link: str, is_playlist: bool = False, quality: str = "high", folder: str = "VideoYoutube", path: str = None, file_tupe_log: str = "txt") -> None:
+        if not file_tupe_log.lower() in ["txt", "csv"]:
+            file_tupe_log = "txt"
+        super(DownloaderVideo, self).__init__(link, is_playlist, quality, file_type_log=file_tupe_log)
         self.init(folder, path)
 
     def download(self):
@@ -245,12 +251,12 @@ class DownloaderLogger:
     TYPES_OUTPUT_LOG = ("txt", "csv")
     REGEX_FILE_EXTENSION = "\.txt$|\.csv$"
 
-    def __init__(self, filename: str = "log", use_timestamp: bool = False) -> None:
+    def __init__(self, filename: str = "log", use_timestamp: bool = False, type_file: str = "txt") -> None:
         self.filename = filename
         self.use_timestamp = use_timestamp
 
         self.dir_output_log = os.path.join(os.path.curdir, "log")
-        self.type_output_log = "txt"
+        self.type_output_log = type_file
 
         self.file = self.get_file_path(self.dir_output_log, self.filename, self.type_output_log)
         self.file_path = ""
@@ -306,40 +312,67 @@ class DownloaderLogger:
 
             raise ValueError("Invalid content to export log.")
 
-        if keep_old_log and not timestamp:
-            with codecs.open(self.file_path, "a+", "utf-8") as logger_file:
-                self._write_date(logger_file)
-                for item in tqdm(video_dict_to_log):
-                    logger_file.write(f"Title: {item['title']}\n")
-                    logger_file.write(f"File Size: {self._get_file_size(item['file_size'], True)}\n")
-                    logger_file.write(f"Resolution: {item['resolution']}\n")
-                    logger_file.write(f"File Location: {item['path_on_system']}\n")
-                    logger_file.writelines("---------------------------------------\n\n")
+        if self.type_output_log == "txt":
+            if keep_old_log and not timestamp:
+                with codecs.open(self.file_path, "a+", "utf-8") as logger_file:
+                    self._write_date(logger_file)
+                    for item in tqdm(video_dict_to_log):
+                        logger_file.write(f"Title: {item['title']}\n")
+                        logger_file.write(f"File Size: {self._get_file_size(item['file_size'], True)}\n")
+                        logger_file.write(f"Resolution: {item['resolution']}\n")
+                        logger_file.write(f"File Location: {item['path_on_system']}\n")
+                        logger_file.writelines("---------------------------------------\n\n")
 
-                    time.sleep(1 / len(video_dict_to_log))
-        else:
-            with codecs.open(self.file_path, "w+", "utf-8") as logger_file:
-                self._write_date(logger_file)
-                for item in tqdm(video_dict_to_log):
-                    logger_file.write(f"Title: {item['title']}\n")
-                    logger_file.write(f"File Size: {item['file_size']}\n")
-                    logger_file.write(f"Resolution: {item['resolution']}\n")
-                    logger_file.write(f"File Location: {item['path_on_system']}\n")
-                    logger_file.writelines("---------------------------------------\n\n")
+                        time.sleep(1 / len(video_dict_to_log))
+            else:
+                with codecs.open(self.file_path, "w+", "utf-8") as logger_file:
+                    self._write_date(logger_file)
+                    for item in tqdm(video_dict_to_log):
+                        logger_file.write(f"Title: {item['title']}\n")
+                        logger_file.write(f"File Size: {item['file_size']}\n")
+                        logger_file.write(f"Resolution: {item['resolution']}\n")
+                        logger_file.write(f"File Location: {item['path_on_system']}\n")
+                        logger_file.writelines("---------------------------------------\n\n")
 
-                    time.sleep(1 / len(video_dict_to_log))
+                        time.sleep(1 / len(video_dict_to_log))
+
+        elif self.type_output_log == "csv":
+            if keep_old_log and not timestamp:
+                df = None
+
+                try:
+                    df = pd.read_csv(self.file_path, sep=';', encoding="utf-8")
+                except:
+                    df = None
+
+                current_df = pd.DataFrame(video_dict_to_log)
+                current_df["date_download"] = str(datetime.now())
+
+                df_final = None
+
+                if df is None:
+                    df_final = current_df
+                else:
+                    df_final = pd.concat([df, current_df], ignore_index=True)
+
+                df_final.to_csv(self.file_path, sep=";", index=False)
+            else:
+                current_df = pd.DataFrame(video_dict_to_log)
+                current_df["date_download"] = str(datetime.now())
+                current_df.to_csv(self.file_path, sep=";", index=False)
+
 
 
 if __name__ == "__main__":
-    # d = [
-    #     { "title": "Teste 1", "file_size": "400Mb", "path_on_system": "Documents/" },
-    #     { "title": "Teste 2", "file_size": "400Mb", "path_on_system": "Documents/" },
-    #     { "title": "Teste 3", "file_size": "400Mb", "path_on_system": "Documents/" },
-    #     { "title": "Teste 4", "file_size": "400Mb", "path_on_system": "Documents/" },
-    # ]
-    # logger = DownloaderLogger(use_timestamp=True)
-    # logger.generate_log(d, timestamp=True)
+    d = [
+        { "title": "Teste 1", "file_size": "400Mb", "resolution": "720p", "path_on_system": "Documents/" },
+        { "title": "Teste 2", "file_size": "400Mb", "resolution": "720p", "path_on_system": "Documents/" },
+        { "title": "Teste 3", "file_size": "400Mb", "resolution": "720p", "path_on_system": "Documents/" },
+        { "title": "Teste 4", "file_size": "400Mb", "resolution": "720p", "path_on_system": "Documents/" },
+    ]
+    logger = DownloaderLogger(use_timestamp=True, type_file="csv")
+    logger.generate_log(d, timestamp=True)
 
-    downloader = Downloader(link="https://www.youtube.com/watch?v=DiXbJL3iWVs", is_playlist=False, quality="hightest")
-    downloader.init("VideoYoutube", os.path.join(os.path.expanduser("~"), "Documents"))
-    downloader.download_video()
+    # downloader = Downloader(link="https://www.youtube.com/watch?v=DiXbJL3iWVs", is_playlist=False, quality="hightest")
+    # downloader.init("VideoYoutube", os.path.join(os.path.expanduser("~"), "Documents"))
+    # downloader.download_video()
