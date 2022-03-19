@@ -71,6 +71,7 @@ class ConverterMP3:
             if ".mp3" in file:
                 _files.append(file)
 
+        print("Moving files to dest")
         for i in tqdm(range(len(audios))):
             shutil.move(audios[i], f"{path_folder}\\{_files[i]}")
 
