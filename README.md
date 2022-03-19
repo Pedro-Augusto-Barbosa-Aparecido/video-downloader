@@ -36,16 +36,16 @@
    - [x] Default folder name ( ***VideoYoutube*** )
    - [x] Dynamics folder path
    - [x] Dynamics folder name
- - [ ] Export log
-   - [ ] Type export file
+ - [x] Export log
+   - [x] Type export file
      - [x] ``.txt``
        - [x] Filename start with: ( ***log*** )
          - [x] End with timestamp
          - [x] End without timestamp
-     - [ ] ``.csv``
-       - [ ] Filename start with: ( ***log*** )
-         - [ ] End with timestamp
-         - [ ] End without timestamp
+     - [x] ``.csv``
+       - [x] Filename start with: ( ***log*** )
+         - [x] End with timestamp
+         - [x] End without timestamp
    - Folder log export ```$project_folder/log```
  - [ ] GUI
 
