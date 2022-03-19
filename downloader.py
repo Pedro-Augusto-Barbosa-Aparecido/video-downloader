@@ -12,6 +12,7 @@ from pytube.cli import on_progress
 from colorama import Fore, Style
 from pathlib import Path
 from tqdm import tqdm
+from utils.converter import ConverterMP3
 
 from utils.quality_translator import Quality
 
@@ -212,12 +213,20 @@ class DownloaderAudio(Downloader):
     def __init__(self, link: str, is_playlist: bool = False, quality: str = "high", folder: str = "AudioYoutube", path: str = None) -> None:
         super(DownloaderAudio, self).__init__(link, is_playlist, quality)
         self.init(folder=folder, path=path)
+        self.converter = None
 
     def download(self):
         if self.is_playlist:
-            self.download_playlist(True)
+            self.download_playlist(False)
+            self.converter = ConverterMP3(os.path.join(self.path_output, self.folder_output), True)
+            self.converter.converter(True, os.listdir(os.path.join(self.path_output, self.folder_output)), os.path.join(self.path_output, self.folder_output), os.path.join(self.path_output, self.folder_output))
+            self.videos_completed = []
+
         else:
-            self.download_video(True)
+            self.download_video(False)
+            self.converter = ConverterMP3(f"{self.videos_completed[0]['path_on_system']}\\{self.videos_completed[0]['title']}.mp4")
+            self.converter.converter(many=False)
+            self.videos_completed = []
 
 
 class DownloaderVideo(Downloader):

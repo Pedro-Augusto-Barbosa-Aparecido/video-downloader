@@ -66,6 +66,11 @@ class ConverterMP3:
         files = os.listdir(path)
         _files = []
 
+        print("Verifing if folder dest exist...")
+        if not os.path.exists(path_folder):
+            print("Creating folder...")
+            os.makedirs(path_folder, exist_ok=True)
+
         print("Collecting files...")
         for file in tqdm(files):
             if ".mp3" in file:
