@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from moviepy.editor import VideoFileClip, AudioFileClip
 from tqdm import tqdm
@@ -12,7 +13,7 @@ class ConverterMP3:
         print(filepath)
         self.audio_converter = None
 
-        self.video_clip: VideoFileClip = VideoFileClip(filepath)
+        self.video_clip: VideoFileClip = None
         self.videos_clips: list[VideoFileClip] = []
 
     def _get_filename_and_path(self):
@@ -21,10 +22,10 @@ class ConverterMP3:
     def _get_video_clip(self):
         self.video_clip = VideoFileClip(self.path)    
         
-    def _get_videos_clips(self, files: list[str]) -> list[AudioFileClip]:
+    def _get_videos_clips(self, files: list[str], path: str) -> list[VideoFileClip]:
         _files: list[AudioFileClip] = []
         for file in tqdm(files):
-            _files.append(VideoFileClip(file).audio)
+            _files.append(VideoFileClip(f"{path}\\{file}"))
 
         return _files
 
@@ -45,34 +46,39 @@ class ConverterMP3:
 
         self._close()
 
-    def _converter_many_audio(self, files: list[str], path_folder: str = None):
-        _files = self._get_videos_clips(files)
-        _files_names = os.listdir(files[0].split("\\")[len(files[0].split("\\")) - 1])
-        
-        for audio, file in tqdm(zip(_files, _files_names)):
-            audio.write_audiofile(f"{path_folder}\\{file.replace('.mp4', '.mp3')}")
+    def _converter_many_audio(self, files: list[str], path: str, path_folder: str = None):
+        audios = []
+
+        for file in files:
+            if not ".mp4" in file:
+                continue
+            _path = f"{path}\\{file.replace('mp4', 'mp3')}"
+            audios.append(_path)
+
+            video = VideoFileClip(f"{path}\\{file}")
+            audio = video.audio
+
+            audio.write_audiofile(_path)
+
+            audio.close()
+            video.close()
+
+        files = os.listdir(path)
+        _files = []
+
+        print("Collecting files...")
+        for file in tqdm(files):
+            if ".mp3" in file:
+                _files.append(file)
+
+        for i in tqdm(range(len(audios))):
+            shutil.move(audios[i], f"{path_folder}\\{_files[i]}")
 
     def init(self):
-        if not self.is_many:
-            # self._get_video_clip()
-            ...
-        else:
-            ...
+        ...
 
-    def converter(self, many: bool = False, files: list[str] = None, path_folder: str = None):
+    def converter(self, many: bool = False, files: list[str] = None, path: str = None, path_folder: str = None):
         if many:
-            self._converter_many_audio(files, path_folder)
+            self._converter_many_audio(files, path, path_folder)
         else:
             self._converter_one_audio()
-
-
-if __name__ == "__main__":
-    # path = "C:\\Users\\pedro\\Documents\\TesteDownload\\Rap_do_Shikamaru_(Naruto)_CUIDADO_COM_AS_SOMBRAS_NERDHITS.mp4"
-    converter = ConverterMP3(os.path.join(os.path.expanduser("~"), "Documents\\TesteDownload\\CENAS BIZZARAS E ENGRAÇADAS DOS ANIMES.mp4"),
-                    False)
-
-    converter.init()
-    converter.converter()
-
-    # VideoFileClip(path).audio.write_audiofile(path.replace(".mp4", ".mp3"))
-    
