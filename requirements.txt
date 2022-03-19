@@ -2,3 +2,4 @@ pytube
 tqdm
 pyttsx3
 moviepy
+pandas
