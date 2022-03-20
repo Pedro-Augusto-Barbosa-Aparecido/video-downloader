@@ -48,7 +48,7 @@
          - [x] End without timestamp
    - Folder log export ```$project_folder/log```
  - [ ] GUI
- - [ ] CLI
+ - [x] CLI
 
 ## Bugs to FIX
 
