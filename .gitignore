@@ -1,3 +1,4 @@
 /video-downloader-venv
 /log
 /.idea
+/node_modules
